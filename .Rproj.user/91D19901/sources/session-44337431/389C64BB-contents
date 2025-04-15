@@ -1,0 +1,20 @@
+---
+title: "Text Mining in R"
+author: "Jarrod Griffin"
+date: "1/14/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+- [Traitement des questions ouvertes avec R ](#analyse-textuelle-des-réponses-denquête)
+  - [1. Préparation de l'Environnement](#1-préparation-de-lenvironnement)
+  - [2. Importation et Nettoyage des Données](#2-importation-et-nettoyage-des-données)
+  - [3. Exploration et Prétraitement Textuel](#3-exploration-et-prétraitement-textuel)
+  - [4. Analyse Thématique (LDA)](#4-analyse-thématique-lda)
+  - [5. Approche Alternative avec BERTopic](#5-approche-alternative-avec-bertopic)
+  - [6. Visualisation et Interprétation](#6-visualisation-et-interprétation)
+- [Références webographiques](#références-webographiques)
+
+

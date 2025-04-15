@@ -1,0 +1,99 @@
+---
+output:
+  pdf_document:
+    latex_engine: xelatex
+    keep_tex: true
+header-includes:
+  - \usepackage{hyperref} #Liens hypertextes
+  - \usepackage{amsmath} # Outils avancés pour écrire des equations maths
+  - \usepackage{amssymb} #Symbole maths
+  - \usepackage{graphicx} #image
+  - \usepackage{fontspec}
+  - \usepackage{xcolor}  # Pour définir et utiliser des couleurs personnalisées
+  - \usepackage{tikz}    # Pour dessiner la bordure
+  - \definecolor{green}{RGB}{0, 100, 0}  # Vert
+  - \setmainfont{Times New Roman} #
+  - \setsansfont{Times New Roman}
+  - \setmonofont{Courier New}
+  - \usepackage[margin=1in]{geometry}
+  - \usepackage{titlesec}
+  - \titleformat{\section}{\Huge\bfseries\color{green}}{\thesection}{1em}{}
+  - \titleformat{\subsection}{\huge\bfseries\color{green}}{\thesubsection}{1em}{}
+  - \titleformat{\subsubsection}{\LARGE\bfseries\color{green}}{\thesubsubsection}{1em}{}
+  - \usepackage{tocloft}
+  - \renewcommand{\cftsecfont}{\small}   
+  - \renewcommand{\cftsubsecfont}{\footnotesize} 
+  - \renewcommand{\cftsecpagefont}{\small}   
+  - \renewcommand{\cftsubsecpagefont}{\footnotesize}
+  - \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}  
+---
+
+```{=tex}
+\begin{titlepage}
+    \begin{center}
+    % Début de la bordure avec TikZ
+    \begin{tikzpicture}[remember picture, overlay] % overlay = force TikZ à dessiner par-dessus le contenu existant de la page, plutôt que de réserver un espace supplémentaire pour le dessin, remember = lorsque vous voulez dessiner par rapport à la position exacte de la page
+    % Définir une couleur élégante
+    \definecolor{green}{RGB}{0, 100, 0}
+    
+    % Dessiner une bordure élégante avec coins arrondis
+    \draw[
+        line width=5pt, % Épaisseur du trait
+        green, % Couleur de la bordure
+        rounded corners=15pt, % Coins arrondis
+        double, % Bordure double
+        double distance=2pt % Espacement entre les deux lignes
+        ]
+        
+        ([xshift=10pt, yshift=-10pt]current page.north west) rectangle
+        ([xshift=-10pt, yshift=10pt]current page.south east);
+    \end{tikzpicture}
+        \includegraphics[width=7cm]{images/LOGO1.png} \\[0.1cm]  
+        
+        \includegraphics[width=6cm]{images/LOGO2.png} \\[0.1cm] 
+        
+        \textbf{\large Agence nationale de la Statistique et de la Démographie (ANSD)}\\[0.2cm]
+        
+        \includegraphics[width=4cm]{images/LOGO3.png} \\[0.1cm]
+        
+        \textbf{\large Ecole nationale de la Statistique et de l'Analyse économique Pierre Ndiaye (ENSAE)}\\[0.4cm]
+        
+        \textit{\LARGE Semestre 2 :PROJET STATISTIQUES AVEC R }\\[0.3cm]
+        \textbf{\Huge \color{green} \textsf{TP 10 : Traitement des questions ouvertes avec R : Texte mining}}\\[0.2cm]
+        
+        \begin{minipage}{0.5\textwidth}
+    \begin{flushleft} \large
+        \emph{\textsf{Rédigé par :}}\\
+        \textbf{Paul BALAFAI}\\
+        \textbf{Mame Balla BOUSSO}\\
+        \textit{Elèves ingénieurs statisticiens économistes}
+    \end{flushleft}
+\end{minipage}
+        \hfill
+        \begin{minipage}{0.4\textwidth}
+            \begin{flushright} \large
+                \emph{\textsf{Sous la supervision de :}} \\
+                \textbf{M. Aboubacre HEMA}\\
+                \textit{Research Analyst }
+            \end{flushright}
+        \end{minipage}
+
+        \vfill 
+
+        {\large \textsf{Année scolaire : 2024/2025}}\\[0.5cm]
+        
+    \end{center}
+\end{titlepage}
+```
+
+
+## Sommaire
+- [Introduction à R Markdown](#introduction-à-r-markdown)
+- [Installation et configuration](#1-installation-et-configuration-de-rmarkdown)
+- [Écrire un document R Markdown](#2-écrire-un-document-r-markdown)
+- [Bonnes pratiques dans R Markdown](#3-Bonnes-pratiques-dans-R-Markdown)
+- [Références bibliographiques](#références-bibliographiques)   
+
+\newpage
+
+# Introduction à R Markdown

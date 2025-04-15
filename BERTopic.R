@@ -3,30 +3,45 @@ library(reticulate)
 # 📦 Imports des modules Python
 sentence_transformers <- import("sentence_transformers")
 hdbscan <- import("hdbscan")
-BERTopic <- import("bertopic")$BERTopic
+bertopic <- import("bertopic")
+umap <- import("umap")  # 👈 important pour fixer le random_state
 
-# 🔤 Modèle d'embedding multilingue
+
+
+# 🔤 Modèle d'embedding (changeable par d'autres plus bas)
 embedding_model <- sentence_transformers$SentenceTransformer("paraphrase-MiniLM-L6-v2")
 
-# Dautres variétés du modèle autre que MiniLM-L6-v2: 
-# distilbert-base-nli-stsb
-# bert-base-nli-mean-tokens
-# mpnet-base-v2
 
-# 🔧 Clustering HDBSCAN personnalisé (avec conversions explicites si besoin)
+# Les variétés existents du modèle (plus puissants) :
+
+# "paraphrase-distilbert-base-nli-stsb" : (taille : 768 | Bonne précision sémantique
+# "bert-base-nli-mean-tokens" : (taille : 768 | Très bonne précision sémantique)
+# "all-mpnet-base-v2" : (taille: 768 | Excellente précision sémantique)
+
+# 🔧 Clustering HDBSCAN
 hdbscan_model <- hdbscan$HDBSCAN(
   min_cluster_size = reticulate::r_to_py(3L),
   min_samples = reticulate::r_to_py(1L)
 )
 
-# 📚 Création du modèle BERTopic
-topic_model <- BERTopic(
-  language = "french",
-  embedding_model = embedding_model,
-  hdbscan_model = hdbscan_model
+# 🎯 Réduction de dimension via UMAP avec seed fixée pour reproductibilité
+umap_model <- umap$UMAP(
+  n_neighbors = 15L,
+  n_components = 5L,
+  min_dist = 0.0,
+  metric = "cosine",
+  random_state = 42L  # ✅ Seed fixée ici
 )
 
-# 📝 Application sur les données
+# 📚 Création du modèle BERTopic
+topic_model <- bertopic$BERTopic(
+  language = "french",
+  embedding_model = embedding_model,
+  hdbscan_model = hdbscan_model,
+  umap_model = umap_model
+  )
+
+
 
 text_empty <- tweetsDF %>%
   group_by(id) %>%
@@ -44,8 +59,6 @@ View(text_filtered)
 docs <- text_filtered$Texte
 ids <- text_filtered$id  # on garde l'id associé à chaque texte
 
-# 🔍 Vérif rapide
-stopifnot(length(docs) == length(ids))
 
 # 🧠 Application du modèle
 result <- topic_model$fit_transform(docs)
@@ -69,6 +82,9 @@ base_categorisee <- data.frame(
   proba = probs
 )
 
+View(base_categorisee)
+
+
 # 🔍 Affichage des infos sur les thèmes trouvés
 topic_info <- topic_model$get_topic_info()
 View(topic_info)
@@ -80,10 +96,8 @@ topic_info$label <- c(
   "Culture et traditions des pays",                           # Topic 2
   "Organisation et co-animation",                             # Topic 3
   "Aménagement de l’espace et durée",                         # Topic 4
-  "Qualité du son",                                           # Topic 5
-  "Réduction du temps des prestations",                       # Topic 6
-  "Présentation des cultures dominantes",                     # Topic 7
-  "Court-métrage et créativité"                               # Topic 8
+  "Qualité du son"                                         # Topic 5
+                                                   # Topic 8
 )
 
 
@@ -121,5 +135,5 @@ tweets_classified <- tweetsDF %>%
 # Afficher les 10 premiers tweets avec leur thème dominant et leur libellé
 head(tweets_classified, 10)
 
-
 View(tweets_classified)
+

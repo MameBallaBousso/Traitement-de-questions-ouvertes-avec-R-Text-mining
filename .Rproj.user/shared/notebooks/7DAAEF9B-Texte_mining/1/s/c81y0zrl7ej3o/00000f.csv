@@ -1,0 +1,7 @@
+"0",""
+"0","Stop_texte %>%"
+"0","  count(word, sort = TRUE) %>%"
+"0","  rename(count = n) %>%"
+"0","  mutate(total=sum(count))%>%"
+"0","  mutate(tf=count/total) %>%"
+"0","  head()"

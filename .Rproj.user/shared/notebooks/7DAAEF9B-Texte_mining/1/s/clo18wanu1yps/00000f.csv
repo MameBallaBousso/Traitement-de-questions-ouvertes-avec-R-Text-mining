@@ -1,0 +1,8 @@
+"0","Stop_texte <- tokenized_textes %>% "
+"0","  anti_join(stop_words_fr, by = ""word"")"
+"0",""
+"0","nrow(Stop_texte)"
+"1","[1]"
+"1"," 317"
+"1","
+"
