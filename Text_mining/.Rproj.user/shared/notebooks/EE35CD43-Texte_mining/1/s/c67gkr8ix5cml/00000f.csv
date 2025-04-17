@@ -1,0 +1,4 @@
+"0",""
+"0","Enquête_dopinion_relative_à_la_journée_dintégration_ <- read_excel(""Data/Enquête_dopinion_relative_à_la_journée_dintégration).xlsx"")"
+"2","Erreur : `path` does not exist: ‘Data/Enquête_dopinion_relative_à_la_journée_dintégration).xlsx’
+"

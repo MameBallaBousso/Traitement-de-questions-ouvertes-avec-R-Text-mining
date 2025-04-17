@@ -1,5 +1,0 @@
-"0","# création d'une matrice document-thème pour LDA"
-"0","df_dtm <- Stop_texte %>%"
-"0","  count(id, word) %>%              "
-"0","  cast_dtm(id, word, n)  "
-"0",""

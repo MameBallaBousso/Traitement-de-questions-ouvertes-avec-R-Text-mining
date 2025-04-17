@@ -1,8 +1,0 @@
-"0","# Étape 4 : Classification des textes par thème"
-"0","textes_gamma <- tidy(lda_model, matrix = ""gamma"")"
-"0","# Afficher les textes avec leur thème dominant"
-"0","textes_classified <- textes_gamma %>%"
-"0","  group_by(document) %>%"
-"0","  slice_max(gamma) %>%"
-"0","  ungroup()"
-"0",""

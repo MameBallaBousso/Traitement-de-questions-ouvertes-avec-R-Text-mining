@@ -1,3 +1,0 @@
-"0",""
-"0","stop_words_fr <- tibble(word = stopwords(""fr"")) "
-"0","head(stop_words_fr)"
