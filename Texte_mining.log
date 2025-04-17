@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.4.16)  17 APR 2025 23:48
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2025.4.16)  18 APR 2025 01:02
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1237,17 +1237,17 @@ Missing character: There is no 𝐾 (U+1D43E) in font Cambria Bold/OT:script=lat
 
 [2]
 LaTeX Font Info:    Font shape `TU/Cambria(0)/m/n' will be
-(Font)              scaled to size 17.28pt on input line 261.
+(Font)              scaled to size 17.28pt on input line 259.
 LaTeX Font Info:    Font shape `TU/CourierNew(0)/m/n' will be
-(Font)              scaled to size 11.03928pt on input line 264.
+(Font)              scaled to size 11.03928pt on input line 262.
 LaTeX Font Info:    Font shape `TU/CourierNew(0)/b/n' will be
-(Font)              scaled to size 10.52856pt on input line 265.
+(Font)              scaled to size 10.52856pt on input line 263.
 LaTeX Font Info:    Font shape `TU/CourierNew(0)/m/it' will be
-(Font)              scaled to size 11.03928pt on input line 265.
+(Font)              scaled to size 11.03928pt on input line 263.
 LaTeX Font Info:    Font shape `TU/Cambria(0)/m/n' will be
-(Font)              scaled to size 20.74pt on input line 279.
+(Font)              scaled to size 20.74pt on input line 277.
 LaTeX Font Info:    Font shape `TU/Cambria(0)/b/n' will be
-(Font)              scaled to size 20.74pt on input line 279.
+(Font)              scaled to size 20.74pt on input line 277.
 
 
 [3]
@@ -1256,7 +1256,7 @@ LaTeX Font Info:    Font shape `TU/Cambria(0)/b/n' will be
 File: Texte_mining_files/figure-latex/unnamed-chunk-6-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-6-1.pdf>
 LaTeX Font Info:    Font shape `TU/Cambria(0)/m/it' will be
-(Font)              scaled to size 10.0pt on input line 423.
+(Font)              scaled to size 10.0pt on input line 421.
 
 
 [5]
@@ -1272,93 +1272,91 @@ File: Texte_mining_files/figure-latex/unnamed-chunk-10-1.pdf Graphic file (type 
 [7]
 
 [8]
-
-[9]
 File: Texte_mining_files/figure-latex/unnamed-chunk-17-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-17-1.pdf>
 
 
-[10]
+[9]
 File: Texte_mining_files/figure-latex/unnamed-chunk-18-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-18-1.pdf>
 
 
+[10]
+
 [11]
 
 [12]
-
-[13]
 File: Texte_mining_files/figure-latex/unnamed-chunk-23-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-23-1.pdf>
 
 
-[14]
+[13]
 
-[15]
+[14]
 File: Texte_mining_files/figure-latex/unnamed-chunk-27-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-27-1.pdf>
 
 
-[16]
+[15]
 
-[17]
+[16]
 File: Texte_mining_files/figure-latex/unnamed-chunk-30-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-30-1.pdf>
 
 
+[17]
+
 [18]
 
 [19]
-
-[20]
 File: Texte_mining_files/figure-latex/unnamed-chunk-34-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-34-1.pdf>
 
-Underfull \vbox (badness 1107) detected at line 1254
+Underfull \vbox (badness 1107) detected at line 1252
  []
 
 
 
-[21]
+[20]
 File: Texte_mining_files/figure-latex/unnamed-chunk-37-1.pdf Graphic file (type pdf)
 <use Texte_mining_files/figure-latex/unnamed-chunk-37-1.pdf>
 
 
-[22]
+[21]
 
-[23]
-Overfull \hbox (84.50699pt too wide) in paragraph at lines 1362--1362
+[22]
+Overfull \hbox (84.50699pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## python:         C:/Users/lenovo/AppData/Local/R/cache/R/reticulate/uv/cache/archive-
  []
 
 
-Overfull \hbox (97.75623pt too wide) in paragraph at lines 1362--1362
+Overfull \hbox (97.75623pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## libpython:      C:/Users/lenovo/AppData/Local/R/cache/R/reticulate/uv/python/cpython-
  []
 
 
-Overfull \hbox (93.33978pt too wide) in paragraph at lines 1362--1362
+Overfull \hbox (93.33978pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## pythonhome:     C:/Users/lenovo/AppData/Local/R/cache/R/reticulate/uv/cache/archive-
  []
 
 
-Overfull \hbox (93.33978pt too wide) in paragraph at lines 1362--1362
+Overfull \hbox (93.33978pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## virtualenv:     C:/Users/lenovo/AppData/Local/R/cache/R/reticulate/uv/cache/archive-
  []
 
 
-Overfull \hbox (42.55106pt too wide) in paragraph at lines 1362--1362
+Overfull \hbox (42.55106pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## version:        3.11.12 (main, Apr  9 2025, 04:03:34) [MSC v.1943 64 bit (AMD64)][] 
  []
 
 
-Overfull \hbox (82.29878pt too wide) in paragraph at lines 1362--1362
+Overfull \hbox (82.29878pt too wide) in paragraph at lines 1360--1360
 []\TU/CourierNew(0)/m/n/10 ## numpy:          C:/Users/lenovo/AppData/Local/R/cache/R/reticulate/uv/cache/archive-
  []
 
 
 
-[24]
+[23]
 Missing character: There is no 🔤 (U+1F524) in font Courier New Italic/OT:script=latn;language=dflt;!
 Missing character: There is no 🧮 (U+1F9EE) in font Courier New Italic/OT:script=latn;language=dflt;!
 Missing character: There is no 📊 (U+1F4CA) in font Courier New Italic/OT:script=latn;language=dflt;!
@@ -1369,119 +1367,119 @@ Missing character: There is no 📦 (U+1F4E6) in font Courier New Italic/OT:scri
 Missing character: There is no 🎯 (U+1F3AF) in font Courier New Italic/OT:script=latn;language=dflt;!
 
 
-[25]
-Overfull \hbox (20.46875pt too wide) in paragraph at lines 1526--1526
+[24]
+Overfull \hbox (20.46875pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ##  [1] 0.7649678 1.0000000 1.0000000 0.7850124 1.0000000 0.8767291 1.0000000[] 
  []
 
 
-Overfull \hbox (20.46875pt too wide) in paragraph at lines 1526--1526
+Overfull \hbox (20.46875pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ##  [8] 1.0000000 1.0000000 1.0000000 0.9240548 1.0000000 0.8713598 1.0000000[] 
  []
 
 
-Overfull \hbox (22.67696pt too wide) in paragraph at lines 1526--1526
+Overfull \hbox (22.67696pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ## [15] 1.0000000 1.0000000 1.0000000 0.9533261 1.0000000 1.0000000 1.0000000[] 
  []
 
 
-Overfull \hbox (22.67696pt too wide) in paragraph at lines 1526--1526
+Overfull \hbox (22.67696pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ## [22] 0.9240548 0.9210614 1.0000000 0.8374228 0.6877206 1.0000000 1.0000000[] 
  []
 
 
-Overfull \hbox (22.67696pt too wide) in paragraph at lines 1526--1526
+Overfull \hbox (22.67696pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ## [29] 1.0000000 0.8713598 1.0000000 1.0000000 0.9533261 1.0000000 0.8585130[] 
  []
 
 
-Overfull \hbox (22.67696pt too wide) in paragraph at lines 1526--1526
+Overfull \hbox (22.67696pt too wide) in paragraph at lines 1524--1524
 []\TU/CourierNew(0)/m/n/10 ## [36] 1.0000000 1.0000000 0.9615890 0.9210614 1.0000000 1.0000000 1.0000000[] 
  []
 
 Missing character: There is no 🔁 (U+1F501) in font Courier New Italic/OT:script=latn;language=dflt;!
 Missing character: There is no 🔍 (U+1F50D) in font Courier New Italic/OT:script=latn;language=dflt;!
 
-Overfull \hbox (51.3849pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (51.3849pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ##                                                                                              Representation[] 
  []
 
 
-Overfull \hbox (164.0032pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (164.0032pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 1                                 de, la, pays, les, présenter, culture, organisation, cultures, chaque, en[] 
  []
 
 
-Overfull \hbox (135.29662pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (135.29662pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 2                                              bien, pour, soit, son, jours, espace, le, est, journée, tout[] 
  []
 
 
-Overfull \hbox (141.92119pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (141.92119pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 3                                           tout, une, soirée, monde, voir, salle, grande, dansante, je, un[] 
  []
 
 
-Overfull \hbox (133.0884pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (133.0884pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 4                                               sketchs, des, courts, acteurs, les, aux, micro, et, je, pas[] 
  []
 
 
-Overfull \hbox (168.4196pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (168.4196pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 5                               temps, prestations, réduire, le, il, faut, des, chanter, accordez, diminuer[] 
  []
 
 
-Overfull \hbox (234.66565pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (234.66565pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 6 court, métrage, culturelle, intégrer, créativité, preuve, diversité, participants, sensibiliser, culturel[] 
  []
 
 
-Overfull \hbox (2429.6393pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2429.6393pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ##                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 Representative_Docs[] 
  []
 
 
-Overfull \hbox (658.6431pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (658.6431pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 1 Que chaque pays présente sa culture de telle sorte les personnes qui ne connaissaient pas ce  pays vont le découvrir à travers la prestation de ses résidents, Encourager la co-
  []
 
 
-Overfull \hbox (2473.79596pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2473.79596pt too wide) in paragraph at lines 1564--1564
 \TU/CourierNew(0)/m/n/10 organisation pour permettre aux différentes cultures de nous présenter des activités culturelles en commun. Prolonger la journée d'intégration à d'autres journées (continuellement) pour favoriser l'apprentissage culturel au sein de l'école, Les différentes communautés doivent s'avantage s'enraciner dans leur cultures et présenter les spécificités de leur cultures afin de susciter la curiousité des autres et voulant en savoir davantage même après la dite journée[] 
  []
 
 
 
-[26]
-Overfull \hbox (2765.28587pt too wide) in paragraph at lines 1566--1566
+[25]
+Overfull \hbox (2765.28587pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 2                                                                                                                                                                                                                                                                                                                                                                                                                                                       Bien organiser l’événement pour éviter le désordre et les retards., Améliorer le son pour que tout soit bien audible., Vérifier le son pour que tout soit bien clair et qu’on entende bien les prestataires[] 
  []
 
 
-Overfull \hbox (2813.8663pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2813.8663pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 3                                                                                                                                                                                                                                                                                                                                                                                                                        Je ne crois pas qu'on. L'air déjà fait mais je trouve que ça pourrait être intéressant, Utiliser une plus grande salle pour permettre à tout le monde de tout voir, Trouver une salle plus grande pour que tout le monde puisse bien voir.[] 
  []
 
 
-Overfull \hbox (2988.31415pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2988.31415pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 4                                                                                                                                                                                                                                                                                                                              Je suggère des sketchs comiques qui vont nous permettre de réparer les dégâts psychologiques causés par le premier semestre, Faire des sketch courts et donner le micro aux acteurs sur la scène, car habituellement on ne les écoute pas., Faire des sketchs courts et bien donner le micro aux acteurs, qu’on puisse les entendre.[] 
  []
 
 
-Overfull \hbox (2601.87895pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2601.87895pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                diminuer le temps des discours, Il faut réduire le temps des prestations, Il faut réduire le temps des prestations[] 
  []
 
 
-Overfull \hbox (2215.44093pt too wide) in paragraph at lines 1566--1566
+Overfull \hbox (2215.44093pt too wide) in paragraph at lines 1564--1564
 []\TU/CourierNew(0)/m/n/10 ## 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      Faire preuve de créativité, Court métrage culturel, Intégrer un court-
  []
 
 
 
-[27]
-Overfull \hbox (29.3018pt too wide) in paragraph at lines 1638--1638
+[26]
+Overfull \hbox (29.3018pt too wide) in paragraph at lines 1636--1636
 []\TU/CourierNew(0)/m/n/10 ##      id `Classe de l’étudiant :` `Nationalité de l'étudiant` texte         label[] 
  []
 
@@ -1489,9 +1487,9 @@ Missing character: There is no 💡 (U+1F4A1) in font Cambria/OT:script=latn;lan
 Missing character: There is no 💡 (U+1F4A1) in font Cambria/OT:script=latn;language=dflt;mapping=tex-text;!
 
 
-[28]
+[27]
 
-[29] (./Texte_mining.aux)
+[28] (./Texte_mining.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-03-26>
@@ -1507,12 +1505,12 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 20097 strings out of 472282
- 372634 string characters out of 5528532
- 954699 words of memory out of 5000000
- 46304 multiletter control sequences out of 15000+600000
+ 20095 strings out of 472282
+ 372611 string characters out of 5528532
+ 954640 words of memory out of 5000000
+ 46302 multiletter control sequences out of 15000+600000
  630626 words of font info for 105 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  90i,7n,116p,1201b,545s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on Texte_mining.pdf (30 pages).
+Output written on Texte_mining.pdf (29 pages).

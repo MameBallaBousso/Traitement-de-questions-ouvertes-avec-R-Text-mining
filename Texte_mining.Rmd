@@ -112,7 +112,6 @@ Dans cette étude, nous nous concentrerons spécifiquement sur cette approche **
 
 \section{1. Importation et Nettoyage des Données}\label{sec:importation}
 
-# Importation et Nettoyage des Données {#sec-importation}
 
 ### Chargement des packages
 
