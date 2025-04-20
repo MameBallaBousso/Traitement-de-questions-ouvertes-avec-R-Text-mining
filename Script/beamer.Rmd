@@ -1,0 +1,1123 @@
+---
+title: "Traitement des questions ouvertes avec R"
+author: "Paul BALAFAI et Mame Balla BOUSSO"
+date: "`r Sys.Date()`"
+output:
+  beamer_presentation:
+    theme: "Madrid"
+    colortheme: "dolphin"
+    fonttheme: "structurebold"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# \textcolor{purple}{\textbf{\textit{Plan de présentation}}}
+
+
+- [Traitement des questions ouvertes avec R](#analyse-textuelle-reponses-enquete)
+  - [1. Importation et Nettoyage des Données](#importation-nettoyage-donnees)
+  - [2. Exploration et Prétraitement Textuel](#exploration-pretraitement-textuel)
+  - [3. Analyse Thématique (LDA)](#analyse-thematique-lda)
+  - [4. Approche Alternative avec BERTopic](#approche-alternative-bertopic)
+  - [5. Catégorisation](#visualisation)
+  - [CONCLUSION](#conclusion)
+- [Références](#references-webographiques)
+
+
+# \textcolor{purple}{\textbf{\textit{INTRODUCTION}}}
+
+
+Le traitement automatique du langage naturel (TALN) regroupe un ensemble de techniques permettant d’analyser, de comprendre et de transformer des textes en données exploitables. 
+
+La forme la plus courante est l’analyse **supervisée**, où chaque texte est associé à un label prédéfini. Ces labels peuvent par exemple représenter des catégories binaires comme 0 ou 1, ou encore des sentiments comme positif, négatif ou neutre.
+
+Cependant, dans de nombreux cas, notamment dans les **questions ouvertes d’enquêtes**, il n'existe aucune annotation préalable permettant de guider l’apprentissage. Il devient alors nécessaire de structurer les données sans repère préalable, en regroupant les textes selon leur **similarité sémantique**. 
+Dans cette étude, nous nous concentrerons spécifiquement sur cette approche **non supervisée**.
+
+Packages : **topicmodels (pour le modèle LDA)**, **tidytext**, et **BERTopic** (**reticulate**) .
+
+
+# \textcolor{purple}{\textbf{\textit{Importation des données}}}
+
+##  package
+
+```{r message=FALSE, warning=FALSE, echo=TRUE}
+library(haven)
+library(readxl)       # Pour lire les fichiers Excel
+library(topicmodels)  # Pour la modélisation thématique
+library(ggplot2)      # Pour les visualisations
+library(dplyr)        # Pour la manipulation de données
+library(tidytext)     # Pour le traitement de texte
+library(tidyr)        # Pour la gestion des données
+library(wordcloud)    # Pour les nuages de mots
+library(tidyverse)    # Collection de packages pour la science des données
+library(tm)           # Pour le text mining
+library(SnowballC)    # Pour le stemming
+library(stringr)      # Pour la manipulation de strings
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+##  Importation des données
+
+```{r, warning=FALSE, message=FALSE}
+
+Enquête_dopinion_relative_à_la_journée_dintégration_ <- read_excel("Data/Enquête_dopinion_relative_à_la_journée_dintégration).xlsx")
+Texte_JI <- Enquête_dopinion_relative_à_la_journée_dintégration_
+head(Enquête_dopinion_relative_à_la_journée_dintégration_)
+
+autres_rgph5 <- read_dta("Data/autres_rgph5.dta")
+colnames(autres_rgph5)
+
+
+data_facteurs <- data.frame(lapply(autres_rgph5, haven::as_factor))
+nrow(data_facteurs)
+ids_data <- data_facteurs$id
+
+# Garde uniquement les documents non vides pour le LDA
+data_loge_filtered <- data_facteurs %>%
+  select(id, E01, E01_AUTRE) %>%
+  filter(E01 == "Autre")
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+## base rgph
+
+```{r}
+unique(data_facteurs$E01)
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+#### Vérification des colonnes
+
+```{r}
+colnames(Texte_JI)
+```
+
+### Identification des textes vides
+
+```{r, warning=FALSE, message=FALSE}
+
+text_id_empty <- Texte_JI %>%
+  group_by(id) %>%
+  summarise(nb_mots = sum(!is.na(Texte))) %>%
+  filter(nb_mots == 0) %>%
+  pull(id)
+Texte_JI_filtered <- Texte_JI %>% 
+  filter(!(id %in% text_id_empty))
+
+head(Texte_JI_filtered)
+nrow(Texte_JI_filtered)
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+On remarque que le nombre de ligne a diminué passant de 128 à 45. Seulement 45 lignes contiennent des textes.
+
+## Nettoyage des textes
+
+On crée une fonction pour traiter les textes afin de faciliter leur analyse
+
+```{r, warning=FALSE, message=FALSE}
+clean_text <- function(text) {
+  text <- tolower(text)           # Conversion en minuscules
+  text <- removePunctuation(text) # Suppression de la ponctuation
+  text <- removeNumbers(text)     # Suppression des chiffres
+  text <- stripWhitespace(text)   # Suppression des espaces superflus
+  return(text)
+}
+
+data <- Texte_JI_filtered %>%
+  mutate(Texte_corrige = sapply(Texte, clean_text))
+
+data1 <- data_loge_filtered
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{2. Exploration et Prétraitement des textes}}}
+
+Dans le processus de prétraitement des données, on va tokeniser la base de données pour analyser non pas les textes, mais les mots directement.
+
+```{r, warning=FALSE, message=FALSE}
+
+tokenized_textes <- data %>%
+  select(id, Texte_corrige) %>%
+  unnest_tokens(input = 'Texte_corrige', output = 'word')
+
+tokenized_textes %>%
+  count(word, sort = TRUE) %>%
+  rename(count = n) %>%
+  filter(count > 5) %>%
+  mutate(word = reorder(word, count)) %>%
+  ggplot(aes(x = count, y = word)) + 
+  geom_col()  + 
+  labs(title = "Les mots apparaissant plus de 5 fois") + 
+  scale_x_continuous(breaks = seq(0, 50, 5))
+
+# Nombre total de lignes après tokenisation
+nrow(tokenized_textes)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+```{r, warning=FALSE, message=FALSE}
+# Nombre total de lignes après tokenisation
+nrow(tokenized_textes)
+```
+
+De nombreux mots présents n’apportent aucune réelle valeur à notre analyse. Des mots comme **de**, **pour**, **les**, **le**, **la** sont ce qu’on appelle des mots vides (stop words).
+
+Nous allons supprimer ces mots en utilisant la commande *anti_join(stop_words)*.
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### cas de la base rgph (Autre à préciser dans type de logement)
+
+```{r, warning=FALSE, message=FALSE}
+data1 <- data_loge_filtered %>%
+  mutate(Texte_corrige1 = sapply(E01_AUTRE, clean_text))
+
+tokenized_textes1 <- data1 %>%
+  select(id, Texte_corrige1) %>%
+  unnest_tokens(input = 'Texte_corrige1', output = 'word')
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+tokenized_textes1 %>%
+  count(word, sort = TRUE) %>%
+  rename(count = n) %>%
+  filter(count > 1000) %>%
+  mutate(word = reorder(word, count)) %>%
+  ggplot(aes(x = count, y = word)) + 
+  geom_col()  + 
+  labs(title = "Les mots apparaissant plus de 1000 fois") + 
+  scale_x_continuous(breaks = seq(0, 50, 5))
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Charger les stop words en français
+
+```{r, warning=FALSE, message=FALSE}
+
+stop_words_fr <- tibble(word = stopwords("fr")) 
+head(stop_words_fr, 10)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+Stop_texte <- tokenized_textes %>% 
+  anti_join(stop_words_fr, by = "word")
+
+nrow(Stop_texte)
+```
+On voit bien que le nombre de mots diminue suite à la supression des 
+stop word.
+Comme nous pouvons le voir sur le graphique ci-dessous, il reste moins de mots, mais ils sont beaucoup plus pertinents pour l’analyse.
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+Stop_texte %>%
+  anti_join(stop_words_fr) %>% # trouve là où les textes rencontrent des stop words, et les supprime
+  count(word, sort = TRUE) %>%
+  rename(count = n) %>%
+  filter(count > 5) %>%
+  mutate(word = reorder(word, count)) %>%
+  ggplot(aes(x = count, y = word)) + 
+  geom_col() + 
+  labs(title = "Les mots apparaissant plus de 5 fois") + 
+  scale_x_continuous(breaks = seq(0, 50, 5))
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+library(ggwordcloud) # Une autre manière de visualiser
+
+Stop_texte %>%
+  anti_join(stop_words_fr) %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 4) %>%
+  ggplot(aes(label = word, size = n, color = n)) + 
+  geom_text_wordcloud() + 
+  scale_size_area(max_size = 15) 
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+L'application des stop word diminue le nombre de mots. Ceci le montre
+
+```{r, warning=FALSE, message=FALSE}
+
+Stop_texte %>%
+  count(word, sort = TRUE)%>%
+  nrow()
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+## Cas du rgph5
+
+```{r}
+Stop_texte1 <- tokenized_textes1 %>% 
+  anti_join(stop_words_fr, by = "word")
+
+Stop_texte1 %>%
+  count(word, sort = TRUE) %>%
+  rename(count = n) %>%
+  slice_max(order_by = count, n = 10) %>%
+  mutate(word = reorder(word, count)) %>%
+  ggplot(aes(x = count, y = word)) + 
+  geom_col(fill = "steelblue") + 
+  labs(title = "Les 10 mots les plus fréquents",
+       x = "Fréquence",
+       y = "Mot") + 
+  theme_minimal()
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Racinisation
+En racinisant, les mots *cultures* et *culture* par exemple se réduisent en *culture*. Voilà pourquoi le nombre total de mots diminue comme le résultat de cette commande l'illustre :
+
+```{r, warning=FALSE, message=FALSE}
+# stemming
+Stop_texte = Stop_texte %>%
+  mutate(stem = wordStem(word))
+
+# unique count of words after stemming
+Stop_texte %>%
+  count(stem, sort = TRUE) %>%
+  nrow()
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+Fréquence des mots avant le stemming
+
+```{r, warning=FALSE, message=FALSE}
+# Fréquence des mots avant le stemming
+Stop_texte %>%
+  count(word) %>%
+  arrange(desc(n)) %>%
+  head(10)
+
+```
+
+Fréquence des mots après le stmming
+
+```{r, warning=FALSE, message=FALSE}
+# Fréquence des mots après le stemming
+Stop_texte %>%
+  count(stem) %>%
+  arrange(desc(n)) %>%
+  head(10)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+On remarque que le stemming ne semble pas respecter la logique pour certains mots.
+En effet, la racinisation supprime les lettres *s* à la fin des mots comme *plus* et *temps*.
+Egalement le mot *paix* est réduit à *pai*. Cela constitut une limite majeure quant à la racinisation en langue française. C'est pourquoi dans ce qui suit, nous ferons fi de cette étape du prétraitement en utilisanat désormais seulement mes textes issus de l'application des stop word.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### les analyse TF-IDF
+
+Ci-dessous, nous voyons l'intégralité du tableau TF-IDF. 
+Ce qui nous intéresse le plus, c'est la colonne tf_idf, car elle nous donne le classement pondéré ou l'importance des mots dans notre texte.
+
+```{r, warning=FALSE, message=FALSE}
+
+texte_tf_idf <- Stop_texte %>%
+  count(word, id, sort = TRUE) %>%
+  rename(count = n) %>%
+  bind_tf_idf(word, id, count)
+head(texte_tf_idf)
+
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+Les simples décomptes de fréquences de mots peuvent être trompeurs et peu utiles
+pour bien comprendre nos données. Il est en fait intéressant de voir les mots les plus fréquents dans chaque texte.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+```{r}
+texte_tf_idf1 <- Stop_texte1 %>%
+  count(word, id, sort = TRUE) %>%
+  rename(count = n) %>%
+  bind_tf_idf(word, id, count)
+head(texte_tf_idf)
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+Les simples décomptes de fréquences de mots peuvent être trompeurs et peu utiles
+pour bien comprendre nos données. Il est en fait intéressant de voir les mots les plus 
+fréquents dans chaque texte.
+
+```{r, warning=FALSE, message=FALSE}
+
+texte_tf_idf %>%
+  select(word, id, tf_idf, count) %>%
+  group_by(id) %>%
+  slice_max(order_by = count, n = 6, with_ties=FALSE) %>% #takes top 5 words from each text
+  filter(id < 6) %>% #just look at 5 textes
+  ggplot(aes(label = word)) + 
+  geom_text_wordcloud() + 
+  facet_grid(rows = vars(id))
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+On s'est limité au cinq premiers textes. Mais les textes correspondant aux identifiants 1 et 3 sont des NA et donc ont été isolés.
+Par ailleurs le résultat qui suit montre aussi qu'il ne faut pas se limiter à un simple dénombrement des textes mais à leur fréquence.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+
+texte_tf_idf %>%
+  select(word, id, tf_idf) %>%
+  group_by(id) %>%
+  slice_max(order_by = tf_idf,n = 6, with_ties=FALSE) %>% #takes top 5 words from each text
+  filter(id < 6) %>% #just look at 5 texts
+  ggplot(aes(label = word)) + 
+  geom_text_wordcloud() + 
+  facet_grid(rows = vars(id))
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Relations entre les mots
+
+Jusqu'à présent, nous avons seulement examiné les mots individuellement. Mais que faire si nous voulons connaître les relations entre les mots dans un texte ? 
+Cela peut être accompli grâce aux n-grammes.
+
+```{r, warning=FALSE, message=FALSE}
+
+textes_bigram <- data %>%
+  select(id, Texte_corrige) %>%
+  unnest_tokens(bigram, Texte_corrige, token = 'ngrams', n = 2) 
+head(textes_bigram)
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+Comme vous pouvez le voir dans le dataframe ci-dessus, certains bigrammes contiennent des mots vides (stop words) qui n’apportent pas beaucoup de valeur. 
+Supprimons ces mots vides. Pour cela, nous allons d'abord séparer la colonne des bigrammes en deux colonnes distinctes nommées 'word1' et 'word2'. 
+Ensuite, nous utiliserons deux fonctions de filtre pour supprimer les mots vides.
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+textes_bigram <- textes_bigram %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%#separates on whitespace
+  filter(!word1 %in% stop_words_fr$word) %>%
+  filter(!word2 %in% stop_words_fr$word)
+
+head(textes_bigram)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+On peut maintenant compter les bigram et voir le résultat
+
+```{r, warning=FALSE, message=FALSE}
+bigram_counts <- textes_bigram %>%
+  count(word1, word2, sort = TRUE)
+head(bigram_counts)
+```
+
+Comme précédemment, on peut aussi créer une mesure TF-IDF avec des n-grammes.
+Faisons-le maintenant.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+```{r, warning=FALSE, message=FALSE}
+data %>%
+  select(id, Texte_corrige) %>%
+  unnest_tokens(bigram, Texte_corrige, token = 'ngrams', n = 2) %>%
+  count(id, bigram) %>%
+  bind_tf_idf(bigram, id, n) %>%
+  group_by(id) %>%
+  arrange(id, desc(tf_idf)) %>%
+  head()
+
+```
+
+Comme on peut le voir ci-dessus, beaucoup de valeurs TF-IDF sont identiques.
+Cela est en partie dû à la petite taille des textes.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Cas du rgph5
+
+```{r, warning=FALSE, message=FALSE}
+data1 %>%
+  select(id, Texte_corrige1) %>%
+  unnest_tokens(bigram, Texte_corrige1, token = 'ngrams', n = 2) %>%
+  count(id, bigram) %>%
+  bind_tf_idf(bigram, id, n) %>%
+  group_by(id) %>%
+  arrange(id, desc(tf_idf)) %>%
+  head()
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+library('igraph')
+library('ggraph')
+bi_graph <- bigram_counts %>%
+  filter(n > 1) %>% 
+  graph_from_data_frame()
+
+ggraph(bi_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+Comme on peut le voir ci-dessus, de nombreux noms et d’autres 
+informations ont été extraits des données.
+
+### Cas des trigrams
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+On peut aussi voir ci-dessous les trigrams
+
+```{r, warning=FALSE, message=FALSE}
+texte_trigram <- data %>%
+  select(id, Texte_corrige) %>%
+  unnest_tokens(trigram, Texte_corrige, token = 'ngrams', n = 3) %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>% #separates on whitespace
+  filter(!word1 %in% stop_words_fr$word) %>%
+  filter(!word2 %in% stop_words_fr$word) %>%
+  filter(!word3 %in% stop_words_fr$word)
+
+head(texte_trigram)
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+```{r, warning=FALSE, message=FALSE}
+trigram_counts <- texte_trigram %>%
+  count(word1, word2, word3, sort = TRUE)
+head(trigram_counts)
+```
+
+Comme précédemment, on peut aussi créer une mesure TF-IDF avec des trigrammes. Faisons-le maintenant.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+```{r, warning=FALSE, message=FALSE}
+data %>%
+  select(id, Texte_corrige) %>%
+  unnest_tokens(trigram, Texte_corrige, token = 'ngrams', n = 3) %>%
+  count(id, trigram) %>%
+  bind_tf_idf(trigram, id, n) %>%
+  group_by(id) %>%
+  arrange(id, desc(tf_idf)) %>%
+  head()
+```
+
+Beaucoup de valeurs TF-IDF sont identiques.
+Cela est en partie dû à la petite taille des textes comme remarqué dans le cas bigram.
+  
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+tri_graph <- trigram_counts %>%
+  filter(n > 0) %>% # Ici, on garde TOUS les trigrammes présents au moins une fois
+  graph_from_data_frame()
+ggraph(tri_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Remarque 
+
+Normalement, on mettrait n > 1 ou n > 2 pour filtrer les trigrammes peu fréquents, mais dans notre cas, les textets sont très courts, donc les trigrammes se répètent très peu.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+Dans notre base de données, le champ contenant les suggestions n’est pas obligatoire, ce qui signifie que plusieurs enregistrements présentent des valeurs manquantes (NA).
+
+```{r, warning=FALSE, message=FALSE}
+# 1. Extraire les ID avant prétraitement (Texte_JI)
+Id_initial_texte <- unique(Texte_JI$id)
+length(Id_initial_texte)
+
+# 2. Extraire les ID après prétraitement (Stop_texte)
+Id_final_texte <- unique(Stop_texte$id)
+length(Id_final_texte)
+
+#. Identifier les tweets manquants (présents avant, absents après)
+Id_texte_NA <- setdiff(Id_initial_texte, Id_final_texte)
+length(Id_texte_NA)
+```
+
+# \textcolor{purple}{\textbf{\textit{3. Analyse Thématique (LDA)}}}
+La méthode LDA (Latent Dirichlet Allocation).
+LDA repose sur deux grands principes :
+Chaque document est un mélange de plusieurs sujets. Chaque sujet est un mélange de mots
+
+Un exemple classique serait de supposer qu’il existe deux grands sujets dans 
+les actualités : la politique et le divertissement.
+Le sujet politique contiendra des mots comme élu, gouvernement, tandis que le sujet divertissement contiendra des mots comme film, acteur.
+Mais certains mots peuvent apparaître dans les deux, comme prix ou budget.
+LDA va identifier :
+les mélanges de mots qui composent chaque sujet, et
+les mélanges de sujets qui composent chaque document.
+   
+# \textcolor{purple}{\textbf{\textit{}}}
+```{r, warning=FALSE, message=FALSE}
+# création d'une matrice document-thème pour LDA
+df_dtm <- Stop_texte %>%
+  count(id, word) %>%              
+  cast_dtm(id, word, n)
+
+df_dtm1 <- Stop_texte1 %>%
+  mutate(id = as.character(id)) %>%
+  count(id, word) %>%              
+  cast_dtm(id, word, n)
+
+```
+
+## Choix du nombre k de thèmes
+
+Dans le cadre de la modélisation thématique avec LDA (Latent Dirichlet Allocation), un des éléments clés du paramétrage est le choix du nombre de thèmes (K).
+Ce paramètre n’est pas déterminé automatiquement par le modèle ; il doit être choisi par l’utilisateur, en fonction des données et des objectifs de l’analyse.
+Or, le nombre de thèmes a un impact direct sur la qualité et la lisibilité du modèle.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Application de la perpelexité pour le choix de K
+
+```{r, warning=FALSE, message=FALSE}
+k_values <- 2:10
+perplexities <- sapply(k_values, function(k) {
+  lda_model <- LDA(df_dtm, k = k, control = list(seed = 1234))
+  perplexity(lda_model)
+})
+
+# Afficher le graphique
+ggplot(data.frame(K = k_values, Perplexity = perplexities), aes(x = K, y = Perplexity)) +
+  geom_point() + geom_line() +
+  labs(title = "Choix du K optimal avec la perplexité",
+       x = "Nombre de thèmes (K)", y = "Perplexité")
+
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+Cas du rgph5
+
+```{r, warning=FALSE, message=FALSE}
+k_values <- 2:10
+perplexities <- sapply(k_values, function(k) {
+  lda_model <- LDA(df_dtm1, k = k, control = list(seed = 1234))
+  perplexity(lda_model)
+})
+
+# Afficher le graphique
+ggplot(data.frame(K = k_values, Perplexity = perplexities), aes(x = K, y = Perplexity)) +
+  geom_point() + geom_line() +
+  labs(title = "Choix du K optimal avec la perplexité",
+       x = "Nombre de thèmes (K)", y = "Perplexité")
+
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+### Cas où le graphe de la perpeléxité ne produit pas un résultat escompté (comme celui du rgph5)
+
+```{r message=FALSE, warning=FALSE}
+
+text_df2 <- Stop_texte %>%
+  mutate(text_semantic = word) %>%  # dupliquer la colonne lemmatisée
+  mutate(
+    text_semantic = str_replace_all(text_semantic, "\\b(manger|plat|mets|piment|restaurant)\\b", "alimentation"),
+    text_semantic = str_replace_all(text_semantic, "\\b(sketch|micro|temps|chanter|court|courtmétrage|sketcheval|scène|culture|culturel|lapprentissage|salle|présentation|apprendre|discours|métrage|fun|espace|prestataire|marrant|comique|communauté|aménager)\\b", "animation"),
+    text_semantic = str_replace_all(text_semantic, "\\b(audible|sonorisation|technique)\\b", "technique"),
+    text_semantic = str_replace_all(text_semantic, "\\b(communication|organisation|créativité|organiser)\\b", "Organisation")
+  )
+
+```
+
+#### Limites : pas trop flexible surtout en cas de grands volumes de données
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Une autre solution (validation humaine)
+
+tokenized_textes1 %>%
+  count(word, sort = TRUE) %>%
+  rename(count = n) %>%
+  filter(count > 1000) %>%
+  mutate(word = reorder(word, count)) %>%
+  ggplot(aes(x = count, y = word)) + 
+  geom_col()  + 
+  labs(title = "Les mots apparaissant plus de 1000 fois") + 
+  scale_x_continuous(breaks = seq(0, 50, 5))
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+* Isolement des termes récurrents à partir de la visualisation
+
+* Regroupement des mots de même sens
+
+* Poursuivre le processus pour avoir une base composés uniquement des mots isolés (ceux que l'on gère bien)
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r message=FALSE, include=FALSE, echo=TRUE}
+mots_cles <- c("mot1", "mot2", "...")
+
+tokens_filtres <- Stop_texte %>%
+  filter(word %in% mots_cles)
+
+restants <- Stop_texte %>%
+  anti_join(tokens_filtres, by = c("id", "word"))
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Lancement du modèle
+
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+lda_model <- LDA(df_dtm, k = 8, control = list(seed = 1234))
+# Termes par thème
+terms_by_topic <- tidy(lda_model, matrix = "beta")
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+
+terms_by_topic
+```
+
+La colonne beta représente la probabilité qu’un mot donné appartienne à un thème particulier.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+```{r, warning=FALSE, message=FALSE}
+top_terms <- terms_by_topic %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10, with_ties = FALSE) %>%  # Prend exactement 10 termes par thème
+  ungroup() %>%
+  arrange(topic, -beta)  # Trie par thème et par probabilité décroissante
+
+# Vérification du nombre de termes sélectionnés par thème
+top_terms %>%
+  count(topic) 
+```
+
+
+# \textcolor{purple}{\textbf{\textit{Analyse en Composantes Principales (ACP)}}}
+
+```{r, warning=FALSE, message=FALSE}
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(title = "Termes les plus probables par thème",
+       x = "Probabilité (beta)", y = "Terme")
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+# Étape 4 : Classification des textes par thème
+textes_gamma <- tidy(lda_model, matrix = "gamma")
+# Afficher les textes avec leur thème dominant
+textes_classified <- textes_gamma %>%
+  group_by(document) %>%
+  slice_max(gamma) %>%
+  ungroup()
+
+```
+
+
+Ici pour chaque texte, on peut voir la probabilité qu'il a d'appartenir à chacun des thèmes.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+
+```{r, warning=FALSE, message=FALSE}
+# Nombre de texte dans chaque thème
+textes_classified %>%
+  count(topic)
+
+```
+Pour chaque thème, on voit le nombre de textes
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+# Visualisation des nombres de texte dans chaque thème
+textes_classified %>%
+  ggplot(aes(factor(topic), fill = factor(topic))) +
+  geom_bar() +
+  labs(title = "Distribution des thèmes dominants",
+       x = "Thème", y = "Nombre de textes")
+```
+
+Nous avons le nombbre de textes pour chaque thème
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Labellisation (très subjective)
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+# Labelliser les thèmes
+
+textes_gamma <- textes_gamma %>%
+  mutate(topic_label = case_when(
+    topic == 1 ~ "Diversité culturelle et activités communes",
+    topic == 2 ~ "Performances artistiques et intervention scénique",
+    topic == 3 ~ "Présentation des cultures par les communautés",
+    topic == 4 ~ "Aménagement de l'espace et la gestion du temps",
+    topic == 5 ~ "Organisation",
+    topic == 6 ~ "Suggestions d'amélioration",
+    topic == 7 ~ "Organisation générale et impression globale",
+    topic == 8 ~ "animation",
+    TRUE ~ "Autre"
+  ))
+```
+
+# \textcolor{purple}{\textbf{\textit{4. Approche Alternative avec BERTopic}}}
+BERTopic est un outil puissant de topic modeling (modélisation de sujets) 
+qui permet d’extraire automatiquement des thèmes principaux à partir de 
+textes non structurés. Il se distingue des approches classiques comme 
+LDA par sa capacité à capturer des relations sémantiques en se basant sur
+le texte et non des motstokenisés.
+
+
+# \textcolor{purple}{\textbf{\textit{Configuration pour travail en python}}}
+
+```{r message=FALSE, warning=FALSE, include=FALSE, echo=TRUE}
+library(reticulate)
+# Voir l'environnement actif de reticulate
+py_config()
+# Installation des packages nécessaires dans l’environnement actif de reticulate
+reticulate::py_install(
+  packages = c("sentence-transformers", "hdbscan", "umap-learn", "bertopic"),
+  pip = TRUE
+)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+### Importation des modules Python
+
+Chaque module que nous importons est lié à une fonctionnalité clé :
+
+- sentence_transformers : gestion des modèles d'embedding de texte
+- hdbscan : algorithme de clustering utilisé par BERTopic
+- bertopic : la librairie principale pour la modélisation de sujets
+- umap : utilisé pour projeter les embeddings dans un espace de plus faible dimension
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+sentence_transformers <- import("sentence_transformers")
+hdbscan <- import("hdbscan")
+bertopic <- import("bertopic")
+umap <- import("umap")  # important pour fixer le random_state
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+# 🔤 Modèle d'embedding (changeable par d'autres plus bas)
+embedding_model <- sentence_transformers$SentenceTransformer("paraphrase-MiniLM-L6-v2")
+
+```
+
+Ici on utilise 'paraphrase-MiniLM-L6-v2', un modèle rapide et efficace. Mais
+il existe d'autres variétés plus puissantes mais qui sont plus robustes en mémoire
+Le tableau qui suit donne quelques détails.
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+
+# 🧮 Comparaison de modèles d'embedding pour BERTopic
+embedding_models <- data.frame(
+  Modele = c(
+    "paraphrase-distilbert-base-nli-stsb",
+    "bert-base-nli-mean-tokens",
+    "all-mpnet-base-v2"
+  ),
+  Taille = c(768, 768, 768),
+  Precision_Semantique = c(
+    "Bonne précision sémantique",
+    "Très bonne précision sémantique",
+    "Excellente précision sémantique"
+  )
+)
+# 📊 Affichage du tableau
+knitr::kable(embedding_models, caption = "Tableau comparatif de modèles d'embedding utilisables avec BERTopic")
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+hdbscan_model <- hdbscan$HDBSCAN(
+  min_cluster_size = reticulate::r_to_py(3L),
+  min_samples = reticulate::r_to_py(1L)
+)
+
+#  Réduction de dimension via UMAP avec seed fixée pour reproductibilité
+umap_model <- umap$UMAP(
+  n_neighbors = 15L,
+  n_components = 5L,
+  min_dist = 0.0,
+  metric = "cosine",
+  random_state = 42L  # Seed fixée ici
+)
+
+#  Création du modèle BERTopic
+topic_model <- bertopic$BERTopic(
+  language = "french",
+  embedding_model = embedding_model,
+  hdbscan_model = hdbscan_model,
+  umap_model = umap_model
+)
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+
+# Préparation des données
+
+docs <- Texte_JI_filtered$Texte
+ids <- Texte_JI_filtered$id  # on garde l'id associé à chaque texte
+
+result <- topic_model$fit_transform(docs)
+
+
+# Extraction des résultats
+topics <- result[[1]]
+probs <- result[[2]]
+
+```
+
+
+
+```{r}
+topics
+probs
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+#  Reconstruction du data.frame avec id + texte + classe
+base_categorisee <- data.frame(
+  id = ids,
+  texte = docs,
+  classe = topics,
+  proba = probs
+)
+
+# Affichage des infos sur les thèmes trouvés
+topic_info <- topic_model$get_topic_info()
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+head(topic_info)
+```
+
+
+# \textcolor{purple}{\textbf{\textit{5. Catégorisation}}}
+
+
+Dans cette section, nous tentons de catégoriser les textes en se basant sur les diff'rents thèmes générés par le modèle.
+
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+topic_info$label <- c(
+  "Célébration et partage des cultures nationales",               # Topic 0
+  "Aspect technique et organisation",                             # Topic 1
+  "Mieux aménager l'espace",                                      # Topic 2
+  "Sketchs et prestations",                                       # Topic 3
+  "Gestion du timing lors des interventions",                     # Topic 4       
+  "Touche créative et courmétrages"                                  # Topic 5
+)
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
+base_categorisee <- merge(
+  base_categorisee, 
+  topic_info[, c("Topic", "label")], 
+  by.x = "classe", 
+  by.y = "Topic", 
+  all.x = TRUE
+)
+base_categorisee <- subset(base_categorisee, select = -c(classe, proba))
+
+doc_vides <- data.frame(
+  id = Id_texte_NA
+)
+
+# 2. Identifier les noms des autres colonnes (sauf "document")
+autres_colonnes <- setdiff(names(base_categorisee), "id")
+
+# 3. Ajouter des NA pour les autres colonnes
+doc_vides[autres_colonnes] <- NA
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE,echo=TRUE}
+
+# 4. Fusionner avec la base existante
+textes_by_topic_complet <- rbind(base_categorisee, doc_vides)
+
+# 5. Optionnel: trier par document si nécessaire
+textes_by_topic_complet <- textes_by_topic_complet[order(textes_by_topic_complet$id), ]
+
+# Joindre les thèmes dominants avec les tweets originaux
+
+Texte_JI$Texte <- NULL
+
+textes_classified <- Texte_JI %>%
+  inner_join(textes_by_topic_complet, by = c("id" = "id"))
+
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, warning=FALSE, message=FALSE}
+head(textes_classified)
+```
+
+# \textcolor{purple}{\textbf{\textit{}}}
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Création du tableau basé sur l'image
+suggestions_table <- data.frame(
+  id = 1:10,
+  texte = c(
+    NA,
+    "Donner à temps le micro aux personnes qui vont chanter.",
+    NA,
+    "Faire des sketchs courts et bien donner le micro aux acteurs.",
+    "Intégrer un court-métrage sur la diversité culturelle pour sensibiliser.",
+    NA,
+    "Faire des sketch courts et donner le micro aux acteurs sur la scène.",
+    NA,
+    "Améliorer le son pour que tout soit bien audible.",
+    NA
+  ),
+  label = c(
+    NA,
+    "Gestion du timing lors des interventions",
+    NA,
+    "Sketchs et prestations",
+    "Touche créative et courmétrages",
+    NA,
+    "Sketchs et prestations",
+    NA,
+    "Aspect technique et organisation",
+    NA
+  )
+)
+
+# 🖨️ Affichage du tableau joliment formaté
+knitr::kable(
+  suggestions_table,
+  caption = " Suggestions pour améliorer l'organisation de la journée d'intégration",
+  align = "ccl"
+)
+
+```
+
+
+# \textcolor{purple}{\textbf{\textit{CONCLUSION}}}
+
+L’analyse textuelle nécessite un prétraitement rigoureux, mais les outils sont souvent mieux optimisés pour l’anglais, limitant leur efficacité pour le français. Des méthodes comme LDA (basée sur les co-occurrences de mots) ont des limites sémantiques, tandis que BERTopic, utilisant des embeddings contextuels (comme BERT), capture mieux le sens des textes. Cependant, l’analyse automatique reste imparfaite face à la diversité linguistique et nécessite une validation humaine pour des résultats fiables.
+
+# \textcolor{purple}{\textbf{\textit{CONCLUSION}}}
+
+### A retenir 
+
+* Prétraitement crucial mais biaisé vers l’anglais. 
+
+* LDA → limite sémantique ; 
+
+* BERTopic → meilleur sens contextuel. 
+
+* Analyse textuelle = utile mais à valider par l’humain.
+
