@@ -16,6 +16,21 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
+      h3("Données"),
+      
+      # Choix des données
+      fileInput("file_input", 
+               "Choisir un fichier CSV:",
+               accept = c("text/csv", 
+                         "text/comma-separated-values,text/plain", 
+                         ".csv")),
+      
+      # Paramètres d'importation
+      checkboxInput("header", "Le fichier contient un en-tête", TRUE),
+      
+      # Sélection de la colonne pour l'analyse
+      uiOutput("column_selector"),
+      
       h3("Options d'analyse"),
       
       # Options pour la visualisation des mots
@@ -40,11 +55,11 @@ ui <- fluidPage(
       
       # TF-IDF options
       numericInput("tf_idf_tweets", 
-                  "Nombre de tweets à analyser pour TF-IDF:", 
+                  "Nombre de documents à analyser pour TF-IDF:", 
                   value = 6, min = 1, max = 50),
                   
       numericInput("tf_idf_words", 
-                  "Nombre de mots par tweet pour TF-IDF:", 
+                  "Nombre de mots par document pour TF-IDF:", 
                   value = 6, min = 1, max = 20),
       
       # Topic modeling options
@@ -73,12 +88,13 @@ ui <- fluidPage(
                  p("Cette application est basée sur le text mining avec R."),
                  p("Utilisez les options du panneau de gauche pour personnaliser l'analyse."),
                  h4("Jeu de données"),
-                 p("Les tweets analysés proviennent du compte Twitter CCIDM."),
-                 dataTableOutput("tweets_preview")
+                 htmlOutput("dataset_info"),
+                 h4("Aperçu des données"),
+                 dataTableOutput("data_preview"),
         ),
         
         tabPanel("Tokenization", 
-                 h3("Tokenization des tweets"),
+                 h3("Tokenization du texte"),
                  p("Le processus de tokenization consiste à diviser le texte en unités significatives (tokens)."),
                  p("Un token est défini comme une unité significative de texte comme un mot, une phrase, un paragraphe ou un n-gramme."),
                  h4("Aperçu des tokens"),
@@ -100,7 +116,7 @@ ui <- fluidPage(
         tabPanel("Analyse de sentiment", 
                  h3("Analyse de sentiment"),
                  p("L'analyse de sentiment tente d'extraire les émotions véhiculées par le texte."),
-                 h4("Distribution du sentiment par tweet"),
+                 h4("Distribution du sentiment par document"),
                  plotOutput("sentiment_dist_plot"),
                  h4("Nuage de mots par sentiment"),
                  plotOutput("sentiment_cloud_plot")
@@ -136,47 +152,121 @@ ui <- fluidPage(
 )
 
 # Server
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-  # Charger les données
-  tweets_data <- reactive({
-    tweets <- read_csv("tweets.csv", col_names = TRUE)
-    tweets <- tweets %>%
-      mutate(tweet_id = row_number())
-    return(tweets)
+  # Charger les données par défaut ou celles téléchargées par l'utilisateur
+  data_source <- reactive({
+    if (is.null(input$file_input)) {
+      # Charger les données par défaut
+      data <- read_csv("tweets.csv", col_names = TRUE)
+      return(list(
+        data = data,
+        source = "Données par défaut: tweets.csv",
+        file_name = "tweets.csv"
+      ))
+    } else {
+      # Charger les données téléchargées
+      file <- input$file_input
+      data <- read_csv(file$datapath, col_names = input$header)
+      return(list(
+        data = data,
+        source = paste("Données chargées par l'utilisateur:", file$name),
+        file_name = file$name
+      ))
+    }
   })
   
-  # Aperçu des tweets
-  output$tweets_preview <- renderDataTable({
-    head(tweets_data(), 10)
+  # Générer le sélecteur de colonnes dynamiquement
+  output$column_selector <- renderUI({
+    data <- data_source()$data
+    
+    # Créer une liste des colonnes qui semblent contenir du texte (character)
+    text_cols <- names(data)
+    
+    if (length(text_cols) == 0) {
+      # Si aucune colonne de texte n'est trouvée, utiliser toutes les colonnes
+      text_cols <- names(data)
+    }
+    
+    selectInput("text_column", 
+                "Colonne à analyser:", 
+                choices = text_cols,
+                selected = ifelse(any(text_cols == "tweet"), "tweet", text_cols[1]))
+  })
+  
+  # Préparer les données
+  processed_data <- reactive({
+    req(input$text_column)
+    
+    data <- data_source()$data
+    
+    # Vérifier que la colonne existe
+    validate(
+      need(input$text_column %in% names(data), 
+           paste("La colonne", input$text_column, "n'existe pas dans les données."))
+    )
+    
+    # Ajouter un ID unique si nécessaire
+    if ("doc_id" %in% names(data)) {
+      data
+    } else {
+      data %>% mutate(doc_id = row_number())
+    }
+  })
+  
+  # Informations sur le jeu de données
+  output$dataset_info <- renderUI({
+    info <- data_source()
+    HTML(paste(
+      "<p><strong>Source:</strong> ", info$source, "</p>",
+      "<p><strong>Nombre de colonnes:</strong> ", ncol(info$data), "</p>",
+      "<p><strong>Colonne sélectionnée pour l'analyse:</strong> ", 
+      ifelse(is.null(input$text_column), "Aucune", input$text_column), "</p>"
+    ))
+  })
+  
+  # Aperçu des données
+  output$data_preview <- renderDataTable({
+    head(data_source()$data, 10)
+  })
+  
+  # Résumé statistique des données
+  output$data_summary <- renderPrint({
+    summary(data_source()$data)
   })
   
   # Tokenization
-  tokenized_tweets <- reactive({
-    unnest_tokens(tweets_data(), input = 'tweet', output = 'word')
+  tokenized_data <- reactive({
+    req(input$text_column)
+    data <- processed_data()
+    
+    unnest_tokens(data, 
+                  input = input$text_column, 
+                  output = 'word', 
+                  token = "words")
   })
   
   # Aperçu des tokens
   output$tokenized_preview <- renderDataTable({
-    head(tokenized_tweets(), 20)
+    head(tokenized_data(), 20)
   })
   
   # Fréquence des mots
   output$word_freq_plot <- renderPlot({
-    tokenized_tweets() %>%
+    tokenized_data() %>%
       count(word, sort = TRUE) %>%
       rename(count = n) %>%
       filter(count > input$word_freq_filter) %>%
       mutate(word = reorder(word, count)) %>%
       ggplot(aes(x = count, y = word)) + 
         geom_col() + 
-        labs(title = "Fréquence des mots dans les tweets") + 
+        labs(title = "Fréquence des mots dans les documents") + 
         scale_x_continuous(breaks = seq(0, 50, 5))
   })
   
   # Fréquence des mots (sans stop words)
   output$word_freq_no_stop <- renderPlot({
-    tokenized_tweets() %>%
+    tokenized_data() %>%
       anti_join(stop_words) %>%
       count(word, sort = TRUE) %>%
       rename(count = n) %>%
@@ -190,7 +280,7 @@ server <- function(input, output) {
   
   # Nuage de mots
   output$wordcloud_plot <- renderPlot({
-    tokenized_tweets() %>%
+    tokenized_data() %>%
       anti_join(stop_words) %>%
       count(word, sort = TRUE) %>%
       filter(n > input$word_freq_filter) %>%
@@ -203,37 +293,35 @@ server <- function(input, output) {
   
   # Analyse de sentiment
   sentiment_data <- reactive({
-    tokenized_tweets() %>%
+    tokenized_data() %>%
       inner_join(get_sentiments(input$sentiment_lexicon))
   })
   
-  # Distribution du sentiment par tweet
+  # Distribution du sentiment par document
   output$sentiment_dist_plot <- renderPlot({
     if (input$sentiment_lexicon == "afinn") {
-      tokenized_tweets() %>%
-        group_by(tweet_id) %>%
+      tokenized_data() %>%
+        group_by(doc_id) %>%
         inner_join(get_sentiments("afinn")) %>%
         summarise(mean_sentiment = mean(value)) %>%
-        ggplot(aes(x = tweet_id, y = mean_sentiment)) + 
+        ggplot(aes(x = doc_id, y = mean_sentiment)) + 
           geom_col() + 
-          labs(title = 'Sentiment moyen par tweet - Lexique Afinn', 
-               x = "Tweet ID", y = 'Sentiment moyen') + 
-          scale_x_continuous(breaks = seq(1, nrow(tweets_data()))) +
+          labs(title = 'Sentiment moyen par document - Lexique Afinn', 
+               x = "Document ID", y = 'Sentiment moyen') + 
           scale_y_continuous(breaks = seq(-3, 3, 0.5))
     } else if (input$sentiment_lexicon == "bing") {
-      tokenized_tweets() %>%
+      tokenized_data() %>%
         inner_join(get_sentiments("bing")) %>%
-        count(tweet_id, sentiment) %>%
+        count(doc_id, sentiment) %>%
         spread(sentiment, n, fill = 0) %>%
         mutate(sentiment_score = positive - negative) %>%
-        ggplot(aes(x = tweet_id, y = sentiment_score)) + 
+        ggplot(aes(x = doc_id, y = sentiment_score)) + 
           geom_col(aes(fill = sentiment_score > 0)) + 
           scale_fill_manual(values = c("red", "green"), guide = "none") +
-          labs(title = 'Score de sentiment par tweet - Lexique Bing', 
-               x = "Tweet ID", y = 'Score') +
-          scale_x_continuous(breaks = seq(1, nrow(tweets_data())))
+          labs(title = 'Score de sentiment par document - Lexique Bing', 
+               x = "Document ID", y = 'Score')
     } else {
-      tokenized_tweets() %>%
+      tokenized_data() %>%
         inner_join(get_sentiments("nrc")) %>%
         filter(!sentiment %in% c("positive", "negative")) %>%
         count(sentiment) %>%
@@ -248,14 +336,14 @@ server <- function(input, output) {
   # Nuage de mots par sentiment
   output$sentiment_cloud_plot <- renderPlot({
     if (input$sentiment_lexicon == "bing") {
-      tokenized_tweets() %>%
+      tokenized_data() %>%
         inner_join(get_sentiments("bing")) %>%
         count(word, sentiment, sort = TRUE) %>%
         acast(word ~ sentiment, value.var = "n", fill = 0) %>%
         comparison.cloud(colors = c("red", "green"),
                          max.words = input$max_words)
     } else if (input$sentiment_lexicon == "nrc") {
-      tokenized_tweets() %>%
+      tokenized_data() %>%
         inner_join(get_sentiments("nrc")) %>%
         filter(!sentiment %in% c("positive", "negative")) %>%
         count(word, sentiment, sort = TRUE) %>%
@@ -267,7 +355,7 @@ server <- function(input, output) {
           facet_wrap(~sentiment) +
           theme_minimal()
     } else {
-      tokenized_tweets() %>%
+      tokenized_data() %>%
         inner_join(get_sentiments("afinn")) %>%
         mutate(sentiment = ifelse(value > 0, "positive", "negative")) %>%
         count(word, sentiment, sort = TRUE) %>%
@@ -279,50 +367,53 @@ server <- function(input, output) {
   
   # TF-IDF
   tf_idf_data <- reactive({
-    tokenized_tweets() %>%
-      count(word, tweet_id, sort = TRUE) %>%
+    tokenized_data() %>%
+      count(word, doc_id, sort = TRUE) %>%
       rename(count = n) %>%
-      bind_tf_idf(word, tweet_id, count)
+      bind_tf_idf(word, doc_id, count)
   })
   
   # TF-IDF - Mots les plus fréquents
   output$tfidf_freq_plot <- renderPlot({
     tf_idf_data() %>%
-      select(word, tweet_id, tf_idf, count) %>%
-      group_by(tweet_id) %>%
+      select(word, doc_id, tf_idf, count) %>%
+      group_by(doc_id) %>%
       slice_max(order_by = count, n = input$tf_idf_words, with_ties = FALSE) %>%
-      filter(tweet_id < input$tf_idf_tweets) %>%
+      filter(as.numeric(doc_id) <= input$tf_idf_tweets) %>%
       ggplot(aes(label = word)) + 
         geom_text_wordcloud() + 
-        facet_grid(rows = vars(tweet_id)) +
+        facet_grid(rows = vars(doc_id)) +
         labs(title = "Top mots par fréquence brute")
   })
   
   # TF-IDF - Mots les plus importants
   output$tfidf_importance_plot <- renderPlot({
     tf_idf_data() %>%
-      select(word, tweet_id, tf_idf) %>%
-      group_by(tweet_id) %>%
+      select(word, doc_id, tf_idf) %>%
+      group_by(doc_id) %>%
       slice_max(order_by = tf_idf, n = input$tf_idf_words, with_ties = FALSE) %>%
-      filter(tweet_id < input$tf_idf_tweets) %>%
+      filter(as.numeric(doc_id) <= input$tf_idf_tweets) %>%
       ggplot(aes(label = word)) + 
         geom_text_wordcloud() + 
-        facet_grid(rows = vars(tweet_id)) +
+        facet_grid(rows = vars(doc_id)) +
         labs(title = "Top mots par importance TF-IDF")
   })
   
   # N-grammes
   ngrams_data <- reactive({
+    req(input$text_column)
+    data <- processed_data()
+    
     if (input$ngram_size == 2) {
-      tweets_data() %>%
-        unnest_tokens(ngram, tweet, token = 'ngrams', n = 2) %>%
+      data %>%
+        unnest_tokens(ngram, !!sym(input$text_column), token = 'ngrams', n = 2) %>%
         separate(ngram, c("word1", "word2"), sep = " ") %>%
         filter(!word1 %in% stop_words$word) %>%
         filter(!word2 %in% stop_words$word) %>%
         unite(ngram, word1, word2, sep = " ")
     } else {
-      tweets_data() %>%
-        unnest_tokens(ngram, tweet, token = 'ngrams', n = 3) %>%
+      data %>%
+        unnest_tokens(ngram, !!sym(input$text_column), token = 'ngrams', n = 3) %>%
         separate(ngram, c("word1", "word2", "word3"), sep = " ") %>%
         filter(!word1 %in% stop_words$word) %>%
         filter(!word2 %in% stop_words$word) %>%
@@ -373,7 +464,7 @@ server <- function(input, output) {
   topics_model <- reactive({
     tf_idf_data() %>%
       anti_join(stop_words) %>%
-      cast_dtm(document = tweet_id, term = word, value = count) %>%
+      cast_dtm(document = doc_id, term = word, value = count) %>%
       LDA(k = input$num_topics)
   })
   
